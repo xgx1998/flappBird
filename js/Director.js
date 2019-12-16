@@ -1,43 +1,103 @@
-/**
- * 变量池,用于保存游戏过程中的个中数据
- * 方便我们在不同的类中访问和修改变量
- */
-export class DataStore{
+import { DataStore } from "./base/DataStore.js"
+import { UpPipe } from "./runtime/UpPipe.js";
+import { DownPipe } from "./runtime/DownPipe.js";
+export class Director{
     constructor(){
-        this.map = new Map();
+        this.dataStore = DataStore.getInstance();
     }
-    /**
-     * 单例,整个游戏过程中只能出现一个变量池
-     * 必须保持变量池唯一(只有一个变量池)
-     */
     static getInstance(){
-        if(!DataStore.instance){
-            // 没有实例
-            DataStore.instance = new DataStore();
+        if(!Director.instance){
+            Director.instance = new Director();
         }
-        return DataStore.instance;
+        return Director.instance;
     }
-    /**
-     * @param {String} key
-     * @param {Object} val
-     */
-    put(key,val){
-        this.map.set(key,val);
-        return this;//方便链式调用
+    // 创建水管组的方法
+    createPipes(){
+        const minTop = this.dataStore.canvas.height/8;
+        const maxTop = this.dataStore.canvas.height/2;
+        const top = Math.random()*(maxTop-minTop)+minTop;
+        this.dataStore.get('pipes').push(new UpPipe(top));
+        this.dataStore.get('pipes').push(new DownPipe(top));
     }
-    /**
-     * 根据给定的key获取对应的值
-     * @param {String} key
-     */
-    get(key){
-        return this.map.get(key);
-    }
-    /**
-     *游戏结束时销毁上一局的数据
-     */
-    destroy(){
-        for(let val of this.map.values()){
-            val = null;
+
+    // 小鸟事件(点击飞高)
+    birdsEvent(){
+        for(let i=0;i<3;i++){
+            this.dataStore.get('birds').y[i] = 
+            this.dataStore.get('birds').birdsY[i];
         }
+        this.dataStore.get('birds').time = 0;
+    }
+    // 判断小鸟与某个水管的撞击情况
+    isStrike(bird,pipe){
+        if(bird.right<pipe.left || bird.left>pipe.right || bird.top>pipe.bottom || bird.bottom<pipe.top){
+            return false;
+        }
+        return true;
+    }
+
+    // 判断游戏结束的情况
+    check(){
+        const birds = this.dataStore.get('birds');
+        const land = this.dataStore.get('land');
+        const pipes = this.dataStore.get('pipes');
+
+        // 小鸟撞天撞第的情况
+        if(birds.birdsY[0]<0 || birds.birdsY[0]+birds.birdsHeight[0]>land.y){
+            return this.isGameOver = true;
+        }
+        // 判断小鸟与水管的撞击
+        // 构建小鸟的边框模型
+        const birdBorder = {
+            top:birds.birdsY[0],
+            bottom:birds.birdsY[0]+birds.birdsHeight[0],
+            left:birds.birdsX[0],
+            right:birds.birdsX[0]+ birds.birdsWidth[0]
+        }
+        // 便利水管,构建水管的模型
+        for(let i=0;i<pipes.length;i++){
+            const p = pipes[i];
+            const pipeBorder = {
+                top:p.y,
+                bottom:p.y+p.height,
+                left:p.x,
+                right:p.x+p.width
+            }
+            // 将每一根水管与小鸟比对,判断有没有撞上
+            if(this.isStrike(birdBorder,pipeBorder)){
+                this.isGameOver = true;
+                return ;
+            }
+        }
+    }
+    // 程序运行的方法
+    run(){
+        this.check();
+       if(!this.isGameOver){
+        this.dataStore.get('background').draw();
+        // 获取水管组
+        const pipes = this.dataStore.get('pipes');
+        // 判断添加水管
+        // 水管超过界面的一半
+        if(pipes[0].x<(this.dataStore.canvas.width/2-pipes[0].width)&& pipes.length<4){
+            this.createPipes();
+        }
+        // 删除过界水管
+        if(pipes[0].x+pipes[0].width<0 && pipes.length==4){
+            pipes.shift();
+            pipes.shift();
+        }
+        // 遍历pipes并画图
+        pipes.forEach(p=>{
+            p.draw();
+        })
+        this.dataStore.get('birds').draw();
+        this.dataStore.get('land').draw();
+
+        this.id = requestAnimationFrame(()=>this.run());
+       }else{
+        //游戏结束
+        alert('游戏结束');
+       }
     }
 }
