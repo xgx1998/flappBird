@@ -1,0 +1,11 @@
+import {Sprit} from '../base/Sprit.js';
+import {DataStore} from '../base/DataStore.js';
+export class StartButton extends Sprit{
+  constructor(){
+    const img = Sprit.getImage('startButton');
+    const canvas = DataStore.getInstance().canvas;
+    const x = (canvas.width-img.width)/2;
+    const y = (canvas.height-img.height)/2;
+    super(img,0,0,img.width,img.height,x,y,img.width,img.height);
+  }
+}
