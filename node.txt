@@ -58,3 +58,10 @@
     |--game.json
     |--project.config.json
     |--Main.js
+
+从VSCode转移到开发者工具
+  Main:
+    document.getElementById()===>wx.createCanvas()
+    addEventListener===>wx.onTouchStart(e=>{})
+  ResourceLoader:
+    new Image()===>wx.createImage()
